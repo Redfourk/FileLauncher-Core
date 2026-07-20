@@ -36,7 +36,6 @@ class ConsoleLoggingHandler(logging.Handler):
         # Print with color applied, then reset and restore prompt
         print(f"\r\033[K{color}{log_entry}{RESET}\nMODERATOR >> ", end="", flush=True)
 
-
 class FileLauncherAPI(BaseHTTPRequestHandler):
     def do_POST(self):
         """Handle incoming POST requests (File Uploads or Commands)"""
@@ -59,10 +58,16 @@ class FileLauncherAPI(BaseHTTPRequestHandler):
         elif self.path == "/command":
             content_length = int(self.headers.get('Content-Length', 0))
             command_data = self.rfile.read(content_length).decode('utf-8')
+
+            logging.info(f"Remote command received: {command_data.strip()}")
+
             response_msg = processor.execute(command_data)
             self._send_response(200, {"result": response_msg})
         else:
             self._send_response(404, {"error": "Route not found"})
+
+    def log_message(self, format, *args):
+        return
 
     def _send_response(self, status_code, data_dict):
         """Helper to send JSON responses back to the client"""
@@ -87,11 +92,12 @@ def moderator_console():
     """Runs a local terminal loop with color-coded feedback for results."""
     while True:
         try:
-            cmd = input("MODERATOR >> ")
+            cmd = input()
             if cmd.strip():
                 result = processor.execute(cmd)
                 color = RED if "Error" in result else GREEN
-                print(f"Result: {color}{result}{RESET}\nMODERATOR >> ", end="", flush=True)
+                print(f"Result: {color}{result}{RESET}")
+            print("MODERATOR >> ", end="", flush=True)
         except EOFError:
             break
 
